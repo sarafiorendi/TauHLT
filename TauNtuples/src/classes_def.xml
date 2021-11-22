@@ -1,0 +1,14 @@
+<lcgdict>
+ <class name="HLTTauCand"/>
+ <class name="std::vector<HLTTauCand>"/>
+ <class name="HLTMuonCand"/>
+ <class name="std::vector<HLTMuonCand>"/>
+ <class name="L1MuonCand"/>
+ <class name="std::vector<L1MuonCand>"/>
+ <class name="L1TauCand"/>
+ <class name="std::vector<L1TauCand>"/>
+ <class name="HLTObjCand"/>
+ <class name="std::vector<HLTObjCand>"/>
+ <class name="HLTInfo"/>
+ <class name="TauEvent"/>
+</lcgdict>
