@@ -16,7 +16,6 @@ process.source = cms.Source("PoolSource",
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.GlobalTag.globaltag = 'auto:phase1_2021_realistic'
 
-# process.GlobalTag.globaltag = cms.string('94X_dataRun2_v11') ## for 2017
 from Configuration.AlCa.GlobalTag import GlobalTag as customiseGlobalTag
 process.GlobalTag = customiseGlobalTag(process.GlobalTag, globaltag = 'auto:phase1_2021_realistic')
 
@@ -45,8 +44,8 @@ process.tauNtuples =cms.EDAnalyzer("TauNtuples",
 
 #                        RhoCorrectionOnline      = cms.untracked.InputTag("hltFixedGridRhoFastjetAllCaloForMuons"), # for now, same for tag and probe muons
 
-#                        lumiScalerTag            = cms.untracked.InputTag("scalersRawToDigi"),
-#                        puInfoTag                = cms.untracked.InputTag("addPileupInfo"),
+                       lumiScalerTag            = cms.untracked.InputTag("scalersRawToDigi"),
+                       puInfoTag                = cms.untracked.InputTag("addPileupInfo"),
 #                        genParticlesTag          = cms.untracked.InputTag("genParticles"),
 #                        doOffline                = cms.untracked.bool(True)
                        )   

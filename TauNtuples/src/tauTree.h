@@ -207,11 +207,11 @@ public:
   Float_t primaryVertex[3];        
 //   Float_t cov_primaryVertex[3][3]; 
 
-  Float_t trueNI;   
   Float_t rho; 
-  
+
   Float_t bxId;
   Float_t instLumi; 
+  Float_t trueNI;   
 
 //   std::vector <GenParticleCand> genParticles; 
 //   std::vector <L2MuonCand>      L2muons;      

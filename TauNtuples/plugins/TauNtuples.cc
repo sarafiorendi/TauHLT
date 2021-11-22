@@ -24,46 +24,38 @@
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
-#include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/MakerMacros.h"
-
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/Utilities/interface/InputTag.h"
-#include "DataFormats/TrackReco/interface/TrackFwd.h"
-
-
-#include "FWCore/ServiceRegistry/interface/Service.h"
-#include "FWCore/Common/interface/TriggerNames.h"
-#include "FWCore/Common/interface/TriggerResultsByName.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+
+#include "FWCore/Common/interface/TriggerNames.h"
+// #include "FWCore/Common/interface/TriggerResultsByName.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Common/interface/View.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/HLTReco/interface/TriggerEvent.h"
-#include "DataFormats/HLTReco/interface/TriggerObject.h"
 #include "DataFormats/L1Trigger/interface/Muon.h"
 #include "DataFormats/L1Trigger/interface/Tau.h"
 #include "DataFormats/Luminosity/interface/LumiDetails.h"
 #include "DataFormats/Math/interface/deltaR.h"
-#include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/MuonReco/interface/MuonSelectors.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/RecoCandidate/interface/IsoDeposit.h"
 #include "DataFormats/RecoCandidate/interface/IsoDepositFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoChargedCandidate.h"
-#include "DataFormats/RecoCandidate/interface/RecoChargedCandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoChargedCandidateIsolation.h"
-#include "DataFormats/TauReco/interface/PFTau.h"
+#include "DataFormats/TauReco/interface/PFTauDiscriminator.h"
+#include "DataFormats/TauReco/interface/PFTauTransverseImpactParameterAssociation.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/Scalers/interface/LumiScalers.h"
-
-#include "DataFormats/TauReco/interface/PFTauTransverseImpactParameterAssociation.h"
-#include "DataFormats/TauReco/interface/PFTauDiscriminator.h"
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
@@ -104,23 +96,23 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 
     void fillL1Taus(const edm::Handle<l1t::TauBxCollection> &,  
                     const edm::Event   &
-                    );
+                   );
 
-    void fillHltMuons(const edm::Handle<reco::RecoChargedCandidateCollection> & ,
+    void fillHltMuons(const edm::Handle<reco::RecoChargedCandidateCollection> &,
                       const edm::Event      &
-                      );
-    void fillHltTaus(const edm::Handle<reco::PFTauCollection> & ,
-                      const edm::Event      &,
-                      const edm::EDGetTokenT<TauIPCollection> &,
-                      const edm::EDGetTokenT<reco::PFTauDiscriminator> &,
-                      const edm::EDGetTokenT<reco::PFTauDiscriminator> &
-                      );
+                     );
+    void fillHltTaus(const edm::Handle<reco::PFTauCollection> &,
+                     const edm::Event      &,
+                     const edm::EDGetTokenT<TauIPCollection> &,
+                     const edm::EDGetTokenT<reco::PFTauDiscriminator> &,
+                     const edm::EDGetTokenT<reco::PFTauDiscriminator> &
+                    );
     void fillHlt(const edm::Handle<edm::TriggerResults> &, 
-                   const edm::Handle<trigger::TriggerEvent> &,
-                   const edm::TriggerNames &,
-                   const edm::Event &,
-                   bool 
-                  );
+                 const edm::Handle<trigger::TriggerEvent> &,
+                 const edm::TriggerNames &,
+                 const edm::Event &,
+                 bool 
+                );
   private:
     void beginJob() override;
     void analyze(const edm::Event&, const edm::EventSetup&) override;
@@ -142,6 +134,9 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
     edm::EDGetTokenT<edm::TriggerResults>   triggerResultToken_;
     edm::EDGetTokenT<trigger::TriggerEvent> triggerSummToken_;
 
+    edm::EDGetTokenT<LumiScalersCollection> lumiScalerToken_;
+    edm::EDGetTokenT<std::vector<PileupSummaryInfo>> puToken_;
+    
     TauEvent event_;
     std::map<std::string,TTree*> tree_;
 
@@ -159,7 +154,9 @@ TauNtuples::TauNtuples(const edm::ParameterSet& iConfig)
       hlttauIsoToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIso"))),
       hlttauIsoValueToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIsoValue"))),
       triggerResultToken_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResult"))),
-      triggerSummToken_(consumes<trigger::TriggerEvent>(iConfig.getUntrackedParameter<edm::InputTag>("triggerSummary")))
+      triggerSummToken_(consumes<trigger::TriggerEvent>(iConfig.getUntrackedParameter<edm::InputTag>("triggerSummary"))),
+      lumiScalerToken_(consumes<LumiScalersCollection>(iConfig.getUntrackedParameter<edm::InputTag>("lumiScalerTag"))),
+      puToken_(consumes<std::vector<PileupSummaryInfo>>(iConfig.getUntrackedParameter<edm::InputTag>("puInfoTag")))
      {}
 
 TauNtuples::~TauNtuples(){}
@@ -168,6 +165,7 @@ TauNtuples::~TauNtuples(){}
 
 // ------------ method called for each event  ------------
 void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup) {
+  
   using namespace edm;
   
   beginEvent();
@@ -177,6 +175,7 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   event_.luminosityBlockNumber = event.id().luminosityBlock();
   event_.eventNumber           = event.id().event();
 
+  // Handle the L1 collections and fill info
   edm::Handle<l1t::MuonBxCollection> mul1cands;
   if (event.getByToken(l1mucandToken_, mul1cands))
     fillL1Muons(mul1cands, event);
@@ -189,8 +188,7 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   else
     edm::LogWarning("") << "Online L1 tau collection not found !!!";
   
-
-  // Handle the online muon collection and fill online muons
+  // Handle the hlt muon collection and fill online muons
   edm::Handle<reco::RecoChargedCandidateCollection> l3mucands;
   if (event.getByToken(hltmucandToken_, l3mucands))
     fillHltMuons(l3mucands, event); 
@@ -203,8 +201,6 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
     fillHltTaus(hlttaucands, event, hlttauIPToken_, hlttauIsoToken_, hlttauIsoValueToken_); 
   else
     edm::LogWarning("") << "Online PF taus collection not found !!!";
-
-
 
   // Fill trigger information for the new trigger
   edm::Handle<edm::TriggerResults>   triggerResults;
@@ -219,75 +215,37 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   else 
     edm::LogError("") << "New trigger collection not found !!!";
 
-//   edm::Handle<reco::PFTauCollection> hlttaucands;
-//   const auto& pfTauTransverseImpactParameters = event.getByToken(tauIPToken_);
-//             FillTau(tauJet.tau, pfTauTransverseImpactParameters, "tau_");
-//         const reco::PFTauTransverseImpactParameter* ip = tau && tauIPs.value(tau.index).isNonnull()
-//                                                          ? &*tauIPs.value(tau.index) : nullptr;
-//         tauTuple.get<float>(prefix + "dxy") = ip ? ip->dxy() : default_value;
-//         tauTuple.get<float>(prefix + "dxy_error") = ip ? ip->dxy_error() : default_value;
-//         tauTuple.get<float>(prefix + "ip3d") = ip ? ip->ip3d() : default_value;
-//         tauTuple.get<float>(prefix + "ip3d_error") = ip ? ip->ip3d_error() : default_value;
-//         const bool has_sv = ip && ip->hasSecondaryVertex();
-//         tauTuple.get<int>(prefix + "hasSecondaryVertex") = ip ? ip->hasSecondaryVertex() : default_int_value;
-//         tauTuple.get<float>(prefix + "sv_x") = has_sv ? ip->secondaryVertexPos().x() : default_value;
-//         tauTuple.get<float>(prefix + "sv_y") = has_sv ? ip->secondaryVertexPos().y() : default_value;
-//         tauTuple.get<float>(prefix + "sv_z") = has_sv ? ip->secondaryVertexPos().z() : default_value;
-//         tauTuple.get<float>(prefix + "flightLength_x") = ip ? ip->flightLength().x() : default_value;
-//         tauTuple.get<float>(prefix + "flightLength_y") = ip ? ip->flightLength().y() : default_value;
-//         tauTuple.get<float>(prefix + "flightLength_z") = ip ? ip->flightLength().z() : default_value;
-//         tauTuple.get<float>(prefix + "flightLength_sig") = ip ? ip->flightLengthSig() : default_value;
-
-////   Fill bx and inst lumi info
-//   if (event.isRealData()) {
-//     event_.bxId  = event.bunchCrossing();
-// 
-//     if (lumiScalerTag_.label() != "none")
-//     {
-//       edm::Handle<LumiScalersCollection> lumiScaler;
-//       event.getByToken(lumiScalerToken_, lumiScaler);
-// 
-//       if (lumiScaler->begin() != lumiScaler->end())
-//         event_.instLumi = lumiScaler->begin()->instantLumi();
-//       } 
-//   }
+  // Fill bx and inst lumi info
+  if (event.isRealData()) {
+    event_.bxId  = event.bunchCrossing();
+    edm::Handle<LumiScalersCollection> lumiScaler;
+    if (event.getByToken(lumiScalerToken_, lumiScaler) && lumiScaler->begin() != lumiScaler->end())
+        event_.instLumi = lumiScaler->begin()->instantLumi(); 
+  }
   
-
-
   // Fill PU info
-//   if (!event.isRealData()) {
-//     edm::Handle<std::vector< PileupSummaryInfo > > puInfo;
-//     if ( event.getByToken(puToken_,puInfo)){
-//       std::vector<PileupSummaryInfo>::const_iterator PVI;
-//       for(PVI = puInfo->begin(); PVI != puInfo->end(); ++PVI) 
-//       {
-//         if(PVI->getBunchCrossing()==0){
-//           event_.trueNI   = PVI->getTrueNumInteractions();
-//           continue;
-//         }
-//       }
-//     } 
-//     else  
-//       edm::LogError("") << "PU collection not found !!!";
-//   }
+  if (!event.isRealData()) {
+    edm::Handle<std::vector< PileupSummaryInfo > > puInfo;
+    if (event.getByToken(puToken_, puInfo)){
+      std::vector<PileupSummaryInfo>::const_iterator PVI;
+      for(PVI = puInfo->begin(); PVI != puInfo->end(); ++PVI) {
+        if(PVI->getBunchCrossing()==0) {
+          event_.trueNI   = PVI->getTrueNumInteractions();
+          continue;
+        }
+      }
+    } 
+    else  
+      edm::LogError("") << "PU collection not found !!!";
+  }
 
 
   // endEvent();
   tree_["tauTree"] -> Fill();
-
-  
-
-// #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-//   // if the SetupData is always needed
-//   auto setup = iSetup.getData(setupToken_);
-//   // if need the ESHandle to check if the SetupData was there or not
-//   auto pSetup = iSetup.getHandle(setupToken_);
-// #endif
 }
 
 // ------------ method called once each job just before starting event loop  ------------
 void TauNtuples::beginJob() {
-  // please remove this method if not needed
   tree_["tauTree"] = outfile_-> make<TTree>("tauTree","tauTree");
   tree_["tauTree"] -> Branch("event" ,&event_, 64000,2);
 }
@@ -321,7 +279,7 @@ void TauNtuples::fillHltTaus( const edm::Handle<reco::PFTauCollection> & taucand
                                )
 {
 
-  edm::Handle<TauIPCollection> tauImpPars;
+  edm::Handle<TauIPCollection> tauIPPars;
   edm::Handle<reco::PFTauDiscriminator> tauIso;
   edm::Handle<reco::PFTauDiscriminator> tauIsoValue;
   for (size_t idx = 0; idx < taucands->size(); ++idx) {
@@ -357,23 +315,22 @@ void TauNtuples::fillHltTaus( const edm::Handle<reco::PFTauCollection> & taucand
 //   Float_t maxHCALPFClusterEt;
     
     // tau IP related info
-    if (event.getByToken(tauIPToken_, tauImpPars)){
+    if (event.getByToken(tauIPToken_, tauIPPars)){
     
-      const reco::PFTauTransverseImpactParameter& tauLifetimeInfo = *(*tauImpPars)[PFTauRef];
-      theTau.dxy    = tauLifetimeInfo.dxy() ;
-      theTau.dxyerr = tauLifetimeInfo.dxy_error() ;
+      const reco::PFTauTransverseImpactParameter& tauIPInfo = *(*tauIPPars)[PFTauRef];
+      theTau.dxy    = tauIPInfo.dxy() ;
+      theTau.dxyerr = tauIPInfo.dxy_error() ;
 
-      theTau.ip3d      = tauLifetimeInfo.ip3d() ;
-      theTau.sigmaip3d = tauLifetimeInfo.ip3d_error() ;
-
-      theTau.hasSV      = tauLifetimeInfo.hasSecondaryVertex() ;
-      theTau.sv_x       = tauLifetimeInfo.secondaryVertexPos().x() ;
-      theTau.sv_y       = tauLifetimeInfo.secondaryVertexPos().y() ;
-      theTau.sv_z       = tauLifetimeInfo.secondaryVertexPos().z() ;
-      theTau.l_x        = tauLifetimeInfo.flightLength().x() ;
-      theTau.l_y        = tauLifetimeInfo.flightLength().y() ;
-      theTau.l_z        = tauLifetimeInfo.flightLength().z() ;
-      theTau.l_sigma    = tauLifetimeInfo.flightLengthSig() ;
+      theTau.ip3d       = tauIPInfo.ip3d() ;
+      theTau.sigmaip3d  = tauIPInfo.ip3d_error() ;
+      theTau.hasSV      = tauIPInfo.hasSecondaryVertex() ;
+      theTau.sv_x       = tauIPInfo.secondaryVertexPos().x() ;
+      theTau.sv_y       = tauIPInfo.secondaryVertexPos().y() ;
+      theTau.sv_z       = tauIPInfo.secondaryVertexPos().z() ;
+      theTau.l_x        = tauIPInfo.flightLength().x() ;
+      theTau.l_y        = tauIPInfo.flightLength().y() ;
+      theTau.l_z        = tauIPInfo.flightLength().z() ;
+      theTau.l_sigma    = tauIPInfo.flightLengthSig() ;
     }
     else{
       theTau.dxy       = -9999;
@@ -417,8 +374,7 @@ void TauNtuples::fillHltMuons(const edm::Handle<reco::RecoChargedCandidateCollec
 //   edm::Handle<reco::RecoChargedCandidateIsolationMap> neutralDepMap;
 //   edm::Handle<reco::RecoChargedCandidateIsolationMap> photonsDepMap;
 
-  for( unsigned int il3 = 0; il3 < l3cands->size(); ++il3) 
-  {
+  for( unsigned int il3 = 0; il3 < l3cands->size(); ++il3) {
     HLTMuonCand theL3Mu;
 
     reco::RecoChargedCandidateRef candref(l3cands, il3);
@@ -442,7 +398,7 @@ void TauNtuples::fillL1Muons(const edm::Handle<l1t::MuonBxCollection> & l1cands 
 
   for (int ibx = l1cands->getFirstBX(); ibx <= l1cands->getLastBX(); ++ibx) {
     if (ibx != 0) continue;
-    for (auto it = l1cands->begin(ibx); it != l1cands->end(ibx); it++){
+    for (auto it = l1cands->begin(ibx); it != l1cands->end(ibx); it++) {
 
       l1t::MuonRef muon(l1cands, distance(l1cands->begin(l1cands->getFirstBX()),it) );
 
@@ -467,7 +423,7 @@ void TauNtuples::fillL1Taus(const edm::Handle<l1t::TauBxCollection> & l1cands ,
 
   for (int ibx = l1cands->getFirstBX(); ibx <= l1cands->getLastBX(); ++ibx) {
     if (ibx != 0) continue;
-    for (auto it = l1cands->begin(ibx); it != l1cands->end(ibx); it++){
+    for (auto it = l1cands->begin(ibx); it != l1cands->end(ibx); it++) {
 
       l1t::TauRef tau(l1cands, distance(l1cands->begin(l1cands->getFirstBX()),it) );
 
@@ -493,21 +449,19 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
                           bool                                       isTag         )
 {    
    
-  for (unsigned int itrig=0; itrig < triggerNames.size(); ++itrig) 
-  {
+  for (unsigned int itrig=0; itrig < triggerNames.size(); ++itrig) {
     LogDebug ("triggers") << triggerNames.triggerName(itrig) ;
-    if (triggerResults->accept(itrig)) 
-    {
+    if (triggerResults->accept(itrig)){
       std::string pathName = triggerNames.triggerName(itrig);
       if ( pathName.find ("HLT_IsoMu"  ) !=std::string::npos ||
            pathName.find ("HLT_Mu45"   ) !=std::string::npos ||
            pathName.find ("HLT_Mu"     ) !=std::string::npos ||
            pathName.find ("HLT_TkMu"   ) !=std::string::npos ||
-           pathName.find ("HLT_IsoTkMu") !=std::string::npos ||
            pathName.find ("HLT_Mu17"   ) !=std::string::npos ||
            pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
            pathName.find ("HLT_DoubleDisplaced" ) !=std::string::npos ||
-           pathName.find ("HLT_Mu8_"  ) !=std::string::npos
+           pathName.find ("HLT_DoubleTight") !=std::string::npos ||
+           pathName.find ("HLT_DoubleMedium"  ) !=std::string::npos
       ){
         if (isTag) event_.hltTag.triggers.push_back(pathName);
         else       event_.hlt   .triggers.push_back(pathName);
@@ -517,15 +471,13 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
      
      
   const trigger::size_type nFilters(triggerEvent->sizeFilters());
-  for (trigger::size_type iFilter=0; iFilter!=nFilters; ++iFilter)
-  {
+  for (trigger::size_type iFilter=0; iFilter!=nFilters; ++iFilter) {
     std::string filterTag = triggerEvent->filterTag(iFilter).encode();
 
     if ( ( filterTag.find ("sMu"     ) !=std::string::npos ||
            filterTag.find ("SingleMu") !=std::string::npos ||
            filterTag.find ("SingleMu") !=std::string::npos ||
            filterTag.find ("DiMuon"  ) !=std::string::npos 
-//            filterTag.find ("DiMuonGlb" ) !=std::string::npos
            ) &&
            filterTag.find ("Tau"       ) ==std::string::npos   &&
            filterTag.find ("EG"        ) ==std::string::npos   &&
@@ -537,8 +489,7 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
       trigger::Keys objectKeys = triggerEvent->filterKeys(iFilter);
       const trigger::TriggerObjectCollection& triggerObjects(triggerEvent->getObjects());
       
-      for (trigger::size_type iKey=0; iKey<objectKeys.size(); ++iKey) 
-      {  
+      for (trigger::size_type iKey=0; iKey<objectKeys.size(); ++iKey) {  
         trigger::size_type objKey = objectKeys.at(iKey);
         const trigger::TriggerObject& triggerObj(triggerObjects[objKey]);
         
@@ -573,21 +524,11 @@ void TauNtuples::beginEvent()
 
   event_.hlt.triggers.clear();
   event_.hlt.objects.clear();
-//   event_.hlt.rho        = -1;
-//   event_.hlt.rho05      = -1;
-//   event_.hlt.rhoM2      = -1;
-//   event_.hlt.rhoMF      = -1;
-//   event_.hlt.rhoM2MF    = -1;
-//   event_.hlt.rho_ecal   = -1;
-//   event_.hlt.rho_hcal   = -1;
-//   event_.hlt.rho_ecalMF = -1;
-//   event_.hlt.rho_hcalM2 = -1;
-//   event_.hlt.rho_ecal05 = -1;
-//   event_.hlt.rho_hcal05 = -1;  
-  
+  event_.hlt.rho        = -1;
+
   event_.hltTag.triggers.clear();
   event_.hltTag.objects.clear();
-//   event_.hltTag.rho = -1;
+  event_.hltTag.rho = -1;
 // 
 //   event_.genParticles.clear();
 //   event_.muons.clear();
@@ -597,10 +538,6 @@ void TauNtuples::beginEvent()
   event_.L1muons.clear();
 
 //   event_.L2muons.clear();
-//   event_.L3OImuons.clear();
-//   event_.L3IOmuons.clear();
-//   event_.L3L1muons.clear();
-// 
 
 //   for (unsigned int ix=0; ix<3; ++ix) {
 //     event_.primaryVertex[ix] = 0.;
