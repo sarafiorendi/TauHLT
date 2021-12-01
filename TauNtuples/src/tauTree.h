@@ -219,6 +219,7 @@ public:
   std::vector <L1TauCand>       L1taus;      
   std::vector <L1MuonCand>      L1muons;      
 
+  std::vector <HLTTauCand>      hlttausnodispl;      
   std::vector <HLTTauCand>      hlttaus;      
   std::vector <HLTMuonCand>     hltmuons;      
 

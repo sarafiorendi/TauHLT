@@ -105,7 +105,8 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
                      const edm::Event      &,
                      const edm::EDGetTokenT<TauIPCollection> &,
                      const edm::EDGetTokenT<reco::PFTauDiscriminator> &,
-                     const edm::EDGetTokenT<reco::PFTauDiscriminator> &
+                     const edm::EDGetTokenT<reco::PFTauDiscriminator> &,
+                     bool
                     );
     void fillHlt(const edm::Handle<edm::TriggerResults> &, 
                  const edm::Handle<trigger::TriggerEvent> &,
@@ -131,8 +132,15 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
     edm::EDGetTokenT<reco::PFTauDiscriminator> hlttauIsoToken_; 
     edm::EDGetTokenT<reco::PFTauDiscriminator> hlttauIsoValueToken_; 
 
+    edm::EDGetTokenT<reco::PFTauCollection> hlttaucandnodisplToken_; 
+    edm::EDGetTokenT<TauIPCollection> hlttauIPnodisplToken_; 
+    edm::EDGetTokenT<reco::PFTauDiscriminator> hlttauIsonodisplToken_; 
+    edm::EDGetTokenT<reco::PFTauDiscriminator> hlttauIsoValuenodisplToken_; 
+
     edm::EDGetTokenT<edm::TriggerResults>   triggerResultToken_;
     edm::EDGetTokenT<trigger::TriggerEvent> triggerSummToken_;
+    edm::EDGetTokenT<edm::TriggerResults>   triggerResultTagToken_;
+    edm::EDGetTokenT<trigger::TriggerEvent> triggerSummTagToken_;
 
     edm::EDGetTokenT<LumiScalersCollection> lumiScalerToken_;
     edm::EDGetTokenT<std::vector<PileupSummaryInfo>> puToken_;
@@ -153,8 +161,14 @@ TauNtuples::TauNtuples(const edm::ParameterSet& iConfig)
       hlttauIPToken_(consumes<TauIPCollection>(iConfig.getUntrackedParameter<edm::InputTag>("tauIP"))),
       hlttauIsoToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIso"))),
       hlttauIsoValueToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIsoValue"))),
+      hlttaucandnodisplToken_(consumes<reco::PFTauCollection>(iConfig.getUntrackedParameter<edm::InputTag>("hltTauCandidatesNoDispl"))),
+      hlttauIPnodisplToken_(consumes<TauIPCollection>(iConfig.getUntrackedParameter<edm::InputTag>("tauIPNoDispl"))),
+      hlttauIsonodisplToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIsoNoDispl"))),
+      hlttauIsoValuenodisplToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIsoValueNoDispl"))),
       triggerResultToken_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResult"))),
       triggerSummToken_(consumes<trigger::TriggerEvent>(iConfig.getUntrackedParameter<edm::InputTag>("triggerSummary"))),
+      triggerResultTagToken_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultTag"))),
+      triggerSummTagToken_(consumes<trigger::TriggerEvent>(iConfig.getUntrackedParameter<edm::InputTag>("triggerSummaryTag"))),
       lumiScalerToken_(consumes<LumiScalersCollection>(iConfig.getUntrackedParameter<edm::InputTag>("lumiScalerTag"))),
       puToken_(consumes<std::vector<PileupSummaryInfo>>(iConfig.getUntrackedParameter<edm::InputTag>("puInfoTag")))
      {}
@@ -198,9 +212,17 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   // Handle the hlt taus collection and fill online taus
   edm::Handle<reco::PFTauCollection> hlttaucands;
   if (event.getByToken(hlttaucandToken_, hlttaucands))
-    fillHltTaus(hlttaucands, event, hlttauIPToken_, hlttauIsoToken_, hlttauIsoValueToken_); 
+    fillHltTaus(hlttaucands, event, hlttauIPToken_, hlttauIsoToken_, hlttauIsoValueToken_,true); 
   else
     edm::LogWarning("") << "Online PF taus collection not found !!!";
+
+  edm::Handle<reco::PFTauCollection> hlttaucandsNodispl;
+  if (event.getByToken(hlttaucandnodisplToken_, hlttaucandsNodispl))
+    fillHltTaus(hlttaucandsNodispl, event, hlttauIPnodisplToken_, hlttauIsonodisplToken_, hlttauIsoValuenodisplToken_,false); 
+  else
+    edm::LogWarning("") << "Online prompt PF taus collection not found !!!";
+
+
 
   // Fill trigger information for the new trigger
   edm::Handle<edm::TriggerResults>   triggerResults;
@@ -214,6 +236,20 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   }
   else 
     edm::LogError("") << "New trigger collection not found !!!";
+
+  // Fill trigger information for the new trigger
+  edm::Handle<edm::TriggerResults>   triggerResultsTag;
+  edm::Handle<trigger::TriggerEvent> triggerEventTag;
+
+  if (event.getByToken(triggerResultTagToken_, triggerResultsTag) &&
+      event.getByToken(triggerSummTagToken_  , triggerEventTag)) {
+      
+    edm::TriggerNames triggerNames_ = event.triggerNames(*triggerResultsTag);
+    fillHlt(triggerResultsTag, triggerEventTag, triggerNames_, event, true);
+  }
+  else 
+    edm::LogError("") << "Old trigger collection not found !!!";
+
 
   // Fill bx and inst lumi info
   if (event.isRealData()) {
@@ -275,7 +311,8 @@ void TauNtuples::fillHltTaus( const edm::Handle<reco::PFTauCollection> & taucand
                               const edm::Event                         & event     ,
                               const edm::EDGetTokenT<TauIPCollection>  & tauIPToken_,
                               const edm::EDGetTokenT<reco::PFTauDiscriminator>  & tauIsoToken_,
-                              const edm::EDGetTokenT<reco::PFTauDiscriminator>  & tauIsoValueToken_
+                              const edm::EDGetTokenT<reco::PFTauDiscriminator>  & tauIsoValueToken_,
+                              bool isDisplaced
                                )
 {
 
@@ -356,11 +393,12 @@ void TauNtuples::fillHltTaus( const edm::Handle<reco::PFTauCollection> & taucand
             theTau.passChargedIso = 0;
     }
     theTau.chargedIso = -9999.;
-    if (event.getByToken(tauIsoToken_, tauIsoValue)){            
+    if (event.getByToken(tauIsoValueToken_, tauIsoValue)){            
         theTau.chargedIso = (*tauIso)[PFTauRef];
     }
             
-    event_.hlttaus   .push_back(theTau);
+    if (isDisplaced) event_.hlttaus   .push_back(theTau);
+    else  event_.hlttausnodispl   .push_back(theTau);
   }
 }
 
@@ -476,12 +514,12 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
 
     if ( ( filterTag.find ("sMu"     ) !=std::string::npos ||
            filterTag.find ("SingleMu") !=std::string::npos ||
-           filterTag.find ("SingleMu") !=std::string::npos ||
-           filterTag.find ("DiMuon"  ) !=std::string::npos 
-           ) &&
-           filterTag.find ("Tau"       ) ==std::string::npos   &&
-           filterTag.find ("EG"        ) ==std::string::npos   &&
-           filterTag.find ("MultiFit"  ) ==std::string::npos
+           filterTag.find ("SingleL2") !=std::string::npos ||
+           filterTag.find ("PFTau"   ) !=std::string::npos ||
+           filterTag.find ("hltSelected" ) !=std::string::npos ||
+           filterTag.find ("hltHps"  ) !=std::string::npos 
+           ) 
+//            && filterTag.find ("Tau"       ) ==std::string::npos   &&
        )
     {
       std::string filterTag = triggerEvent->filterTag(iFilter).encode();
@@ -531,7 +569,7 @@ void TauNtuples::beginEvent()
   event_.hltTag.rho = -1;
 // 
 //   event_.genParticles.clear();
-//   event_.muons.clear();
+  event_.hlttausnodispl.clear();
   event_.hlttaus.clear();
   event_.hltmuons.clear();
   event_.L1taus.clear();

@@ -1,4 +1,4 @@
-# TauHLT
+## TauHLT
 
 ```
 cmsrel CMSSW_12_1_0
