@@ -387,7 +387,7 @@ void TauNtuples::fillHltTaus( const edm::Handle<reco::PFTauCollection> & taucand
     // tau iso info
     theTau.passChargedIso = -1;
     if (event.getByToken(tauIsoToken_, tauIso)){
-        if ((*tauIso)[PFTauRef] < 0.5) 
+        if ((*tauIso)[PFTauRef] > 0.5) 
             theTau.passChargedIso = 1;
         else    
             theTau.passChargedIso = 0;
@@ -516,6 +516,7 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
            filterTag.find ("SingleMu") !=std::string::npos ||
            filterTag.find ("SingleL2") !=std::string::npos ||
            filterTag.find ("PFTau"   ) !=std::string::npos ||
+           filterTag.find ("hltDouble" ) !=std::string::npos ||
            filterTag.find ("hltSelected" ) !=std::string::npos ||
            filterTag.find ("hltHps"  ) !=std::string::npos 
            ) 
