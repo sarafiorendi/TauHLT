@@ -99,7 +99,8 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
                    );
 
     void fillHltMuons(const edm::Handle<reco::RecoChargedCandidateCollection> &,
-                      const edm::Event      &
+                      const edm::Event      &,
+                      const edm::Handle<reco::BeamSpot> &  
                      );
     void fillHltTaus(const edm::Handle<reco::PFTauCollection> &,
                      const edm::Event      &,
@@ -144,6 +145,7 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 
     edm::EDGetTokenT<LumiScalersCollection> lumiScalerToken_;
     edm::EDGetTokenT<std::vector<PileupSummaryInfo>> puToken_;
+    edm::EDGetTokenT<reco::BeamSpot> bsToken_;
     
     TauEvent event_;
     std::map<std::string,TTree*> tree_;
@@ -170,7 +172,8 @@ TauNtuples::TauNtuples(const edm::ParameterSet& iConfig)
       triggerResultTagToken_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultTag"))),
       triggerSummTagToken_(consumes<trigger::TriggerEvent>(iConfig.getUntrackedParameter<edm::InputTag>("triggerSummaryTag"))),
       lumiScalerToken_(consumes<LumiScalersCollection>(iConfig.getUntrackedParameter<edm::InputTag>("lumiScalerTag"))),
-      puToken_(consumes<std::vector<PileupSummaryInfo>>(iConfig.getUntrackedParameter<edm::InputTag>("puInfoTag")))
+      puToken_(consumes<std::vector<PileupSummaryInfo>>(iConfig.getUntrackedParameter<edm::InputTag>("puInfoTag"))),
+      bsToken_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspot")))
      {}
 
 TauNtuples::~TauNtuples(){}
@@ -189,6 +192,13 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   event_.luminosityBlockNumber = event.id().luminosityBlock();
   event_.eventNumber           = event.id().event();
 
+
+  //get offline beamspot position
+  edm::Handle<reco::BeamSpot> beamSpotHandle;
+  event.getByToken(bsToken_, beamSpotHandle);
+//   const reco::BeamSpot& vertexBeamSpot = *recoBeamSpotHandle;
+
+
   // Handle the L1 collections and fill info
   edm::Handle<l1t::MuonBxCollection> mul1cands;
   if (event.getByToken(l1mucandToken_, mul1cands))
@@ -205,7 +215,7 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   // Handle the hlt muon collection and fill online muons
   edm::Handle<reco::RecoChargedCandidateCollection> l3mucands;
   if (event.getByToken(hltmucandToken_, l3mucands))
-    fillHltMuons(l3mucands, event); 
+    fillHltMuons(l3mucands, event, beamSpotHandle); 
   else
     edm::LogWarning("") << "Online L3 muons collection not found !!!";
 
@@ -404,13 +414,16 @@ void TauNtuples::fillHltTaus( const edm::Handle<reco::PFTauCollection> & taucand
 
 // ---------------------------------------------------------------------
 void TauNtuples::fillHltMuons(const edm::Handle<reco::RecoChargedCandidateCollection> & l3cands ,
-                               const edm::Event                                        & event
+                               const edm::Event                                       & event  ,
+                               const edm::Handle<reco::BeamSpot>                      & beamSpotHandle
                                )
 {
 
 //   edm::Handle<reco::IsoDepositMap> trkDepMap;
 //   edm::Handle<reco::RecoChargedCandidateIsolationMap> neutralDepMap;
 //   edm::Handle<reco::RecoChargedCandidateIsolationMap> photonsDepMap;
+  const reco::BeamSpot& bs = *beamSpotHandle;
+
 
   for( unsigned int il3 = 0; il3 < l3cands->size(); ++il3) {
     HLTMuonCand theL3Mu;
@@ -420,7 +433,10 @@ void TauNtuples::fillHltMuons(const edm::Handle<reco::RecoChargedCandidateCollec
     theL3Mu.eta     = candref -> eta();
     theL3Mu.phi     = candref -> phi();
     theL3Mu.charge  = candref -> charge();
-//     theL3Mu.dxy     = candref -> dxy();  // to be checked
+    
+    reco::TrackRef tk = candref->track();
+    float absDxy = std::abs(tk->dxy(bs.position()));
+    theL3Mu.dxy     = absDxy;  // to be checked
     
     theL3Mu.dz = candref -> vz();
 
@@ -497,7 +513,8 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
            pathName.find ("HLT_TkMu"   ) !=std::string::npos ||
            pathName.find ("HLT_Mu17"   ) !=std::string::npos ||
            pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
-           pathName.find ("HLT_DoubleDisplaced" ) !=std::string::npos ||
+           pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
+           pathName.find ("HLT_Displaced" ) !=std::string::npos ||
            pathName.find ("HLT_DoubleTight") !=std::string::npos ||
            pathName.find ("HLT_DoubleMedium"  ) !=std::string::npos
       ){
