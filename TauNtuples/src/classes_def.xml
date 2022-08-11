@@ -3,6 +3,12 @@
  <class name="std::vector<HLTTauCand>"/>
  <class name="HLTMuonCand"/>
  <class name="std::vector<HLTMuonCand>"/>
+ <class name="HLTJetTagCand"/>
+ <class name="std::vector<HLTJetTagCand>"/>
+ <class name="HLTVtx"/>
+ <class name="std::vector<HLTVtx>"/>
+ <class name="HLTTk"/>
+ <class name="std::vector<HLTTk>"/>
  <class name="L1MuonCand"/>
  <class name="std::vector<L1MuonCand>"/>
  <class name="L1TauCand"/>

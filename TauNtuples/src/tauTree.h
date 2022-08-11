@@ -147,6 +147,53 @@ public:
 };
 
 
+class HLTJetTagCand {
+public:
+
+  Float_t pt;           
+  Float_t eta;          
+  Float_t phi;          
+  Int_t   charge;         
+
+  Float_t iso;
+
+  HLTJetTagCand(){};
+  virtual ~HLTJetTagCand(){};
+
+  ClassDef(HLTJetTagCand,1);   
+};
+
+
+class HLTVtx {
+public:
+
+  Float_t x;           
+  Float_t y;          
+  Float_t z;          
+  Float_t ntks;          
+
+  HLTVtx(){};
+  virtual ~HLTVtx(){};
+  ClassDef(HLTVtx,1);   
+};
+
+class HLTTk {
+public:
+
+  Float_t pt;           
+  Float_t eta;          
+  Float_t phi;          
+  Float_t charge;          
+  Int_t nhits;
+  Float_t chi2;
+  Float_t dxy;
+
+  HLTTk(){};
+  virtual ~HLTTk(){};
+  ClassDef(HLTTk,1);   
+};
+
+
 
 class HLTObjCand {
 public:
@@ -221,7 +268,12 @@ public:
 
   std::vector <HLTTauCand>      hlttausnodispl;      
   std::vector <HLTTauCand>      hlttaus;      
-  std::vector <HLTMuonCand>     hltmuons;      
+  std::vector <HLTMuonCand>     hltmuons;     
+  std::vector <HLTJetTagCand>   hltjettags;     
+  std::vector <HLTVtx>          hltvtx;     
+  std::vector <HLTTk>           hlttks;     
+  
+   
 
   HLTInfo                       hlt;           
   HLTInfo                       hltTag;            

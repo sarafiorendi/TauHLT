@@ -36,6 +36,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 
+#include "DataFormats/BTauReco/interface/JetTag.h"
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Common/interface/View.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
@@ -109,6 +110,16 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
                      const edm::EDGetTokenT<reco::PFTauDiscriminator> &,
                      bool
                     );
+    void fillHltJetTags(const edm::Handle<reco::JetTagCollection> &,
+                      const edm::Event      &
+                     );
+    void fillHltVtx(const edm::Handle<reco::VertexCollection> &,
+                    const edm::Event      &
+                   );
+    void fillHltTks(const edm::Handle<reco::TrackCollection> &,
+                    const edm::Event &,
+                    const edm::Handle<reco::BeamSpot> &  
+                   );
     void fillHlt(const edm::Handle<edm::TriggerResults> &, 
                  const edm::Handle<trigger::TriggerEvent> &,
                  const edm::TriggerNames &,
@@ -138,6 +149,11 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
     edm::EDGetTokenT<reco::PFTauDiscriminator> hlttauIsonodisplToken_; 
     edm::EDGetTokenT<reco::PFTauDiscriminator> hlttauIsoValuenodisplToken_; 
 
+    edm::EDGetTokenT<reco::JetTagCollection> jetTagToken_; 
+    edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
+    edm::EDGetTokenT<reco::TrackCollection> pixTracksToken_;
+    
+    
     edm::EDGetTokenT<edm::TriggerResults>   triggerResultToken_;
     edm::EDGetTokenT<trigger::TriggerEvent> triggerSummToken_;
     edm::EDGetTokenT<edm::TriggerResults>   triggerResultTagToken_;
@@ -167,6 +183,9 @@ TauNtuples::TauNtuples(const edm::ParameterSet& iConfig)
       hlttauIPnodisplToken_(consumes<TauIPCollection>(iConfig.getUntrackedParameter<edm::InputTag>("tauIPNoDispl"))),
       hlttauIsonodisplToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIsoNoDispl"))),
       hlttauIsoValuenodisplToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIsoValueNoDispl"))),
+      jetTagToken_(consumes<reco::JetTagCollection>(iConfig.getUntrackedParameter<edm::InputTag>("L2isoJetTag"))),
+      vtxToken_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("onlineVertices"))),
+      pixTracksToken_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("pixelTracks"))),
       triggerResultToken_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResult"))),
       triggerSummToken_(consumes<trigger::TriggerEvent>(iConfig.getUntrackedParameter<edm::InputTag>("triggerSummary"))),
       triggerResultTagToken_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultTag"))),
@@ -203,35 +222,56 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   edm::Handle<l1t::MuonBxCollection> mul1cands;
   if (event.getByToken(l1mucandToken_, mul1cands))
     fillL1Muons(mul1cands, event);
-  else
-    edm::LogWarning("") << "Online L1 muon collection not found !!!";
+//   else
+//     edm::LogWarning("") << "Online L1 muon collection not found !!!";
 
   edm::Handle<l1t::TauBxCollection> taul1cands;
   if (event.getByToken(l1taucandToken_, taul1cands))
     fillL1Taus(taul1cands, event);
-  else
-    edm::LogWarning("") << "Online L1 tau collection not found !!!";
+//   else
+//     edm::LogWarning("") << "Online L1 tau collection not found !!!";
   
   // Handle the hlt muon collection and fill online muons
   edm::Handle<reco::RecoChargedCandidateCollection> l3mucands;
   if (event.getByToken(hltmucandToken_, l3mucands))
     fillHltMuons(l3mucands, event, beamSpotHandle); 
-  else
-    edm::LogWarning("") << "Online L3 muons collection not found !!!";
+//   else
+//     edm::LogWarning("") << "Online L3 muons collection not found !!!";
 
   // Handle the hlt taus collection and fill online taus
   edm::Handle<reco::PFTauCollection> hlttaucands;
   if (event.getByToken(hlttaucandToken_, hlttaucands))
     fillHltTaus(hlttaucands, event, hlttauIPToken_, hlttauIsoToken_, hlttauIsoValueToken_,true); 
-  else
-    edm::LogWarning("") << "Online PF taus collection not found !!!";
+//   else
+//     edm::LogWarning("") << "Online PF taus collection not found !!!";
 
   edm::Handle<reco::PFTauCollection> hlttaucandsNodispl;
   if (event.getByToken(hlttaucandnodisplToken_, hlttaucandsNodispl))
     fillHltTaus(hlttaucandsNodispl, event, hlttauIPnodisplToken_, hlttauIsonodisplToken_, hlttauIsoValuenodisplToken_,false); 
-  else
-    edm::LogWarning("") << "Online prompt PF taus collection not found !!!";
+//   else
+//     edm::LogWarning("") << "Online prompt PF taus collection not found !!!";
 
+
+  // Handle the hlt jet tag collection and fill 
+  edm::Handle<reco::JetTagCollection> hltjettagcands;
+  if (event.getByToken(jetTagToken_, hltjettagcands))
+    fillHltJetTags(hltjettagcands, event); 
+//   else
+//     edm::LogWarning("") << "Online Jet collection not found !!!";
+
+  // Handle the hlt jet tag collection and fill 
+  edm::Handle<reco::VertexCollection> onlinevtx;
+  if (event.getByToken(vtxToken_, onlinevtx))
+    fillHltVtx(onlinevtx, event); 
+//   else
+//     edm::LogWarning("") << "Online vtx collection not found !!!";
+
+  // Handle the hlt jet tag collection and fill 
+  edm::Handle<reco::TrackCollection> pixTks;
+  if (event.getByToken(pixTracksToken_, pixTks))
+    fillHltTks(pixTks, event, beamSpotHandle); 
+  else
+    edm::LogWarning("") << "Online tk collection not found !!!";
 
 
   // Fill trigger information for the new trigger
@@ -404,7 +444,7 @@ void TauNtuples::fillHltTaus( const edm::Handle<reco::PFTauCollection> & taucand
     }
     theTau.chargedIso = -9999.;
     if (event.getByToken(tauIsoValueToken_, tauIsoValue)){            
-        theTau.chargedIso = (*tauIso)[PFTauRef];
+        theTau.chargedIso = (*tauIsoValue)[PFTauRef];
     }
             
     if (isDisplaced) event_.hlttaus   .push_back(theTau);
@@ -445,8 +485,71 @@ void TauNtuples::fillHltMuons(const edm::Handle<reco::RecoChargedCandidateCollec
 }
 
 // ---------------------------------------------------------------------
+void TauNtuples::fillHltJetTags(const edm::Handle<reco::JetTagCollection> & jetcandsHandle ,
+                                const edm::Event & event  
+                               )
+{
+
+  const reco::JetTagCollection& jetTags = *(jetcandsHandle.product());
+  for (const auto& i_jetTag : jetTags) {
+    const auto& jetRef = i_jetTag.first;
+   
+    const auto isoVal = i_jetTag.second;
+    
+    HLTJetTagCand theJet;
+  
+    theJet.pt  = jetRef->pt();
+    theJet.eta  = jetRef->eta();
+    theJet.phi  = jetRef->phi();
+    theJet.charge  = jetRef->charge();
+    theJet.iso  = isoVal;
+  
+    event_.hltjettags   .push_back(theJet);
+  }
+}
+
+
+// ---------------------------------------------------------------------
+void TauNtuples::fillHltVtx(const edm::Handle<reco::VertexCollection> & onlinevtx ,
+                                const edm::Event & event  
+                               )
+{
+  const reco::VertexCollection& vtxs = *(onlinevtx.product());
+  for (unsigned ivtx = 0 ;  ivtx < vtxs.size(); ivtx++){
+    if (!vtxs.at(ivtx).isValid() || vtxs.at(ivtx).isFake())  continue;
+    HLTVtx theVtx;
+    theVtx.x  = vtxs.at(ivtx).position().x();
+    theVtx.y  = vtxs.at(ivtx).position().y();
+    theVtx.z  = vtxs.at(ivtx).position().z();
+    theVtx.ntks  = vtxs.at(ivtx).nTracks();
+    event_.hltvtx   .push_back(theVtx);
+  }
+}
+// ---------------------------------------------------------------------
+void TauNtuples::fillHltTks(const edm::Handle<reco::TrackCollection> & pixTrksHandle ,
+                            const edm::Event & event  ,
+                            const edm::Handle<reco::BeamSpot> & beamSpotHandle
+                             
+                               )
+{
+//   std::cout << "start filling tracks" << std::endl;
+  const reco::BeamSpot& bs = *beamSpotHandle;
+  const reco::TrackCollection& pixTrks = *(pixTrksHandle.product());
+  for (unsigned itk = 0 ;  itk < pixTrks.size(); itk++){
+    HLTTk theTk;
+    theTk.pt   = pixTrks.at(itk).pt();
+    theTk.eta  = pixTrks.at(itk).eta();
+    theTk.phi  = pixTrks.at(itk).phi();
+    theTk.charge  = pixTrks.at(itk).charge();
+    theTk.nhits  = pixTrks.at(itk).numberOfValidHits();
+    theTk.chi2  = pixTrks.at(itk).normalizedChi2() ;
+    theTk.dxy  = std::abs( pixTrks.at(itk).dxy(bs.position()));
+    event_.hlttks   .push_back(theTk);
+  }
+}
+// ---------------------------------------------------------------------
 void TauNtuples::fillL1Muons(const edm::Handle<l1t::MuonBxCollection> & l1cands ,
-                              const edm::Event                         & event    
+                             const edm::Event & event    
                               )
 {
 
@@ -534,6 +637,9 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
            filterTag.find ("SingleL2") !=std::string::npos ||
            filterTag.find ("PFTau"   ) !=std::string::npos ||
            filterTag.find ("hltDouble" ) !=std::string::npos ||
+           filterTag.find ("hltL1sDoubleTau" ) !=std::string::npos ||
+           filterTag.find ("hltL1sTauVeryBigOR" ) !=std::string::npos ||
+           filterTag.find ("L2TauIso" ) !=std::string::npos ||
            filterTag.find ("hltSelected" ) !=std::string::npos ||
            filterTag.find ("hltHps"  ) !=std::string::npos 
            ) 
@@ -590,10 +696,12 @@ void TauNtuples::beginEvent()
   event_.hlttausnodispl.clear();
   event_.hlttaus.clear();
   event_.hltmuons.clear();
+  event_.hltjettags.clear();
   event_.L1taus.clear();
   event_.L1muons.clear();
+  event_.hltvtx.clear();
+  event_.hlttks.clear();
 
-//   event_.L2muons.clear();
 
 //   for (unsigned int ix=0; ix<3; ++ix) {
 //     event_.primaryVertex[ix] = 0.;
