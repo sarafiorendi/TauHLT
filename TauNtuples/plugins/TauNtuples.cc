@@ -114,11 +114,13 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
                       const edm::Event      &
                      );
     void fillHltVtx(const edm::Handle<reco::VertexCollection> &,
-                    const edm::Event      &
+                    const edm::Event      &,
+                    bool
                    );
     void fillHltTks(const edm::Handle<reco::TrackCollection> &,
                     const edm::Event &,
-                    const edm::Handle<reco::BeamSpot> &  
+                    const edm::Handle<reco::BeamSpot> &  ,
+                    bool onlyPixel
                    );
     void fillHlt(const edm::Handle<edm::TriggerResults> &, 
                  const edm::Handle<trigger::TriggerEvent> &,
@@ -126,7 +128,13 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
                  const edm::Event &,
                  bool 
                 );
-  private:
+    void fillHltMiniAOD(const edm::Handle<edm::TriggerResults> &, 
+                        const edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects,
+//                         const edm::TriggerNames &,
+                        const edm::Event &,
+                        bool 
+                       );
+
     void beginJob() override;
     void analyze(const edm::Event&, const edm::EventSetup&) override;
     void endJob() override;
@@ -151,13 +159,17 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 
     edm::EDGetTokenT<reco::JetTagCollection> jetTagToken_; 
     edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
+    edm::EDGetTokenT<reco::VertexCollection> taupvToken_;
     edm::EDGetTokenT<reco::TrackCollection> pixTracksToken_;
+    edm::EDGetTokenT<reco::TrackCollection> tkTracksToken_;
     
     
     edm::EDGetTokenT<edm::TriggerResults>   triggerResultToken_;
     edm::EDGetTokenT<trigger::TriggerEvent> triggerSummToken_;
+//     edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerObjMiniToken_;
     edm::EDGetTokenT<edm::TriggerResults>   triggerResultTagToken_;
     edm::EDGetTokenT<trigger::TriggerEvent> triggerSummTagToken_;
+    edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerObjMiniTagToken_;
 
     edm::EDGetTokenT<LumiScalersCollection> lumiScalerToken_;
     edm::EDGetTokenT<std::vector<PileupSummaryInfo>> puToken_;
@@ -185,11 +197,14 @@ TauNtuples::TauNtuples(const edm::ParameterSet& iConfig)
       hlttauIsoValuenodisplToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIsoValueNoDispl"))),
       jetTagToken_(consumes<reco::JetTagCollection>(iConfig.getUntrackedParameter<edm::InputTag>("L2isoJetTag"))),
       vtxToken_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("onlineVertices"))),
+      taupvToken_(consumes<reco::VertexCollection>(iConfig.getUntrackedParameter<edm::InputTag>("tauPVertices"))),
       pixTracksToken_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("pixelTracks"))),
+      tkTracksToken_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("allTracks"))),
       triggerResultToken_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResult"))),
       triggerSummToken_(consumes<trigger::TriggerEvent>(iConfig.getUntrackedParameter<edm::InputTag>("triggerSummary"))),
       triggerResultTagToken_(consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("triggerResultTag"))),
       triggerSummTagToken_(consumes<trigger::TriggerEvent>(iConfig.getUntrackedParameter<edm::InputTag>("triggerSummaryTag"))),
+      triggerObjMiniTagToken_(consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getUntrackedParameter<edm::InputTag>("triggerObjMiniTag"))),
       lumiScalerToken_(consumes<LumiScalersCollection>(iConfig.getUntrackedParameter<edm::InputTag>("lumiScalerTag"))),
       puToken_(consumes<std::vector<PileupSummaryInfo>>(iConfig.getUntrackedParameter<edm::InputTag>("puInfoTag"))),
       bsToken_(consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspot")))
@@ -262,16 +277,29 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   // Handle the hlt jet tag collection and fill 
   edm::Handle<reco::VertexCollection> onlinevtx;
   if (event.getByToken(vtxToken_, onlinevtx))
-    fillHltVtx(onlinevtx, event); 
+    fillHltVtx(onlinevtx, event,false); 
 //   else
 //     edm::LogWarning("") << "Online vtx collection not found !!!";
 
-  // Handle the hlt jet tag collection and fill 
+  edm::Handle<reco::VertexCollection> taupvcoll;
+  if (event.getByToken(taupvToken_, taupvcoll))
+    fillHltVtx(taupvcoll, event,true); 
+  else
+    edm::LogWarning("") << "Online tau PV collection not found !!!";
+
+  // Handle the hlt pixel track collection and fill 
   edm::Handle<reco::TrackCollection> pixTks;
   if (event.getByToken(pixTracksToken_, pixTks))
-    fillHltTks(pixTks, event, beamSpotHandle); 
-  else
-    edm::LogWarning("") << "Online tk collection not found !!!";
+    fillHltTks(pixTks, event, beamSpotHandle, true); 
+//   else
+//     edm::LogWarning("") << "Online pixel tk collection not found !!!";
+
+  // Handle the hlt track collection and fill 
+  edm::Handle<reco::TrackCollection> tkTks;
+  if (event.getByToken(tkTracksToken_, tkTks))
+    fillHltTks(tkTks, event, beamSpotHandle, false); 
+//   else
+//     edm::LogWarning("") << "Online tk collection not found !!!";
 
 
   // Fill trigger information for the new trigger
@@ -284,18 +312,24 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
     edm::TriggerNames triggerNames_ = event.triggerNames(*triggerResults);
     fillHlt(triggerResults, triggerEvent, triggerNames_, event, false);
   }
-  else 
+  else
     edm::LogError("") << "New trigger collection not found !!!";
+
 
   // Fill trigger information for the new trigger
   edm::Handle<edm::TriggerResults>   triggerResultsTag;
   edm::Handle<trigger::TriggerEvent> triggerEventTag;
+  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjectsTag;
 
   if (event.getByToken(triggerResultTagToken_, triggerResultsTag) &&
       event.getByToken(triggerSummTagToken_  , triggerEventTag)) {
       
     edm::TriggerNames triggerNames_ = event.triggerNames(*triggerResultsTag);
     fillHlt(triggerResultsTag, triggerEventTag, triggerNames_, event, true);
+  }
+  else if (event.getByToken(triggerResultTagToken_, triggerResultsTag) &&
+           event.getByToken(triggerObjMiniTagToken_  , triggerObjectsTag)) {
+    fillHltMiniAOD(triggerResultsTag, triggerObjectsTag, event, true);
   }
   else 
     edm::LogError("") << "Old trigger collection not found !!!";
@@ -511,8 +545,9 @@ void TauNtuples::fillHltJetTags(const edm::Handle<reco::JetTagCollection> & jetc
 
 // ---------------------------------------------------------------------
 void TauNtuples::fillHltVtx(const edm::Handle<reco::VertexCollection> & onlinevtx ,
-                                const edm::Event & event  
-                               )
+                            const edm::Event & event,
+                            bool tauPVs      
+                            )
 {
   const reco::VertexCollection& vtxs = *(onlinevtx.product());
   for (unsigned ivtx = 0 ;  ivtx < vtxs.size(); ivtx++){
@@ -522,13 +557,18 @@ void TauNtuples::fillHltVtx(const edm::Handle<reco::VertexCollection> & onlinevt
     theVtx.y  = vtxs.at(ivtx).position().y();
     theVtx.z  = vtxs.at(ivtx).position().z();
     theVtx.ntks  = vtxs.at(ivtx).nTracks();
-    event_.hltvtx   .push_back(theVtx);
+    if (!tauPVs)
+      event_.hltvtx   .push_back(theVtx);
+    else
+      event_.taupvs   .push_back(theVtx);
+      
   }
 }
 // ---------------------------------------------------------------------
 void TauNtuples::fillHltTks(const edm::Handle<reco::TrackCollection> & pixTrksHandle ,
                             const edm::Event & event  ,
-                            const edm::Handle<reco::BeamSpot> & beamSpotHandle
+                            const edm::Handle<reco::BeamSpot> & beamSpotHandle,
+                            bool onlyPixel
                              
                                )
 {
@@ -544,7 +584,10 @@ void TauNtuples::fillHltTks(const edm::Handle<reco::TrackCollection> & pixTrksHa
     theTk.nhits  = pixTrks.at(itk).numberOfValidHits();
     theTk.chi2  = pixTrks.at(itk).normalizedChi2() ;
     theTk.dxy  = std::abs( pixTrks.at(itk).dxy(bs.position()));
-    event_.hlttks   .push_back(theTk);
+    if (onlyPixel)
+      event_.pixtks   .push_back(theTk);
+    else  
+      event_.hlttks   .push_back(theTk);
   }
 }
 // ---------------------------------------------------------------------
@@ -641,6 +684,7 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
            filterTag.find ("hltL1sTauVeryBigOR" ) !=std::string::npos ||
            filterTag.find ("L2TauIso" ) !=std::string::npos ||
            filterTag.find ("hltSelected" ) !=std::string::npos ||
+           filterTag.find ("Displ" ) !=std::string::npos ||
            filterTag.find ("hltHps"  ) !=std::string::npos 
            ) 
 //            && filterTag.find ("Tau"       ) ==std::string::npos   &&
@@ -679,6 +723,77 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
 //   }
 }
 
+// ---------------------------------------------------
+//---------------------------------------------------
+
+
+void TauNtuples::fillHltMiniAOD(const edm::Handle<edm::TriggerResults>    & triggerResults, 
+                                const edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects,
+                                const edm::Event                         & event         ,
+                                bool                                       isTag         )
+{    
+   
+  const edm::TriggerNames &triggerNames = event.triggerNames(*triggerResults);
+
+  for (unsigned int itrig=0; itrig < triggerNames.size(); ++itrig) {
+    LogDebug ("triggers") << triggerNames.triggerName(itrig) ;
+    if (triggerResults->accept(itrig)){
+      std::string pathName = triggerNames.triggerName(itrig);
+      if ( pathName.find ("HLT_IsoMu"  ) !=std::string::npos ||
+           pathName.find ("HLT_Mu45"   ) !=std::string::npos ||
+           pathName.find ("HLT_Mu"     ) !=std::string::npos ||
+           pathName.find ("HLT_TkMu"   ) !=std::string::npos ||
+           pathName.find ("HLT_Mu17"   ) !=std::string::npos ||
+           pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
+           pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
+           pathName.find ("HLT_Displaced" ) !=std::string::npos ||
+           pathName.find ("HLT_DoubleTight") !=std::string::npos ||
+           pathName.find ("HLT_DoubleMedium"  ) !=std::string::npos
+      ){
+        if (isTag) event_.hltTag.triggers.push_back(pathName);
+        else       event_.hlt   .triggers.push_back(pathName);
+      }
+    }
+  }
+     
+     
+  for (pat::TriggerObjectStandAlone obj : *triggerObjects) { // note: not "const &" since we want to call unpackPathNames
+    obj.unpackPathNames(triggerNames);
+    obj.unpackFilterLabels(event,*triggerResults);
+    const std::vector<std::string> obj_filters = obj.filterLabels() ;
+    unsigned int nFilters = obj_filters.size();
+
+    for (unsigned int iFilter=0; iFilter < nFilters; ++iFilter) {
+      std::string filterTag = obj_filters[iFilter];
+      if ( ( filterTag.find ("sMu"     ) !=std::string::npos ||
+        filterTag.find ("SingleMu") !=std::string::npos ||
+        filterTag.find ("SingleL2") !=std::string::npos ||
+//         filterTag.find ("PFTau"   ) !=std::string::npos ||
+        filterTag.find ("hltDouble" ) !=std::string::npos ||
+        filterTag.find ("hltL1sDoubleTau" ) !=std::string::npos ||
+        filterTag.find ("hltL1sTauVeryBigOR" ) !=std::string::npos ||
+        filterTag.find ("L2TauIso" ) !=std::string::npos ||
+        filterTag.find ("hltSelected" ) !=std::string::npos ||
+        filterTag.find ("Displ" ) !=std::string::npos ||
+        filterTag.find ("hltHps"  ) !=std::string::npos 
+        ) ) 
+      {
+//           std::cout <<  filterTag << std::endl;
+          HLTObjCand hltObj;
+          hltObj.filterTag = filterTag;
+          hltObj.pt  = obj.pt();
+          hltObj.eta = obj.eta();
+          hltObj.phi = obj.phi();
+          if (isTag)       event_.hltTag.objects.push_back(hltObj);
+          else             event_.hlt   .objects.push_back(hltObj);
+      }
+    }
+  }  
+}
+
+
+
+
 //---------------------------------------------------
 
 void TauNtuples::beginEvent()
@@ -700,6 +815,8 @@ void TauNtuples::beginEvent()
   event_.L1taus.clear();
   event_.L1muons.clear();
   event_.hltvtx.clear();
+  event_.taupvs.clear();
+  event_.pixtks.clear();
   event_.hlttks.clear();
 
 

@@ -271,6 +271,8 @@ public:
   std::vector <HLTMuonCand>     hltmuons;     
   std::vector <HLTJetTagCand>   hltjettags;     
   std::vector <HLTVtx>          hltvtx;     
+  std::vector <HLTVtx>          taupvs;     
+  std::vector <HLTTk>           pixtks;     
   std::vector <HLTTk>           hlttks;     
   
    

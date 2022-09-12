@@ -4,11 +4,7 @@ process = cms.Process("NTUPLE")
 
 process.source = cms.Source("PoolSource",
                     fileNames = cms.untracked.vstring(
-#                       '/store/group/phys_bphys/fiorendi/p5prime/displTaus/Staus_M_500_100mm_14TeV_Run3MC/crab_hlt_gmsb_100mm_v26_patatrack_iter4_onL1CandsPt24_remove130/211118_151855/0000/outputHLT_1.root',
-#                       'root://xrootd-cms.infn.it//store/data/Run2018D/EphemeralHLTPhysics1/RAW/v1/000/325/022/00000/02314AC5-B556-CA4C-BA94-C05B3CBD9358.root',
-                        '/store/data/Run2018D/EphemeralHLTPhysics1/RAW/v1/000/325/022/00000/02314AC5-B556-CA4C-BA94-C05B3CBD9358.root',
-                        '/store/data/Run2018D/EphemeralHLTPhysics1/RAW/v1/000/325/022/00000/023EEA5B-C333-724A-A38D-5DEA2C859F11.root',
-                        '/store/data/Run2018D/EphemeralHLTPhysics1/RAW/v1/000/325/022/00000/04E4143B-FA7F-DA4C-A93F-F582F2B1D74F.root',
+                        'root://cms-xrd-global.cern.ch//store/data/Run2022D/Muon/MINIAOD/PromptReco-v1/000/357/542/00000/050a5ab6-44bb-46b4-b624-123b55834e60.root',
                     ),
                     secondaryFileNames = cms.untracked.vstring(),
 #                     lumisToProcess = cms.untracked.VLuminosityBlockRange('258158:1-258158:1786'),
@@ -34,27 +30,33 @@ process.tauNtuples =cms.EDAnalyzer("TauNtuples",
                        triggerSummary           = cms.untracked.InputTag("hltTriggerSummaryAOD::MYHLT"),
                        triggerResultTag         = cms.untracked.InputTag("TriggerResults::HLT"),
                        triggerSummaryTag        = cms.untracked.InputTag("hltTriggerSummaryAOD::HLT"),
-#                        
-                       hltMuCandidates             = cms.untracked.InputTag("hltL3MuonCandidates"), 
-                       hltTauCandidates            = cms.untracked.InputTag("hltHpsPFTauProducerDispl", "", "MYHLT"), 
-                       tauIP                       = cms.untracked.InputTag("hltHpsPFTauTransverseImpactParameters"), 
-                       tauIso                      = cms.untracked.InputTag("hltHpsDisplPFTauMediumAbsOrRelChargedIsolationDiscriminator"), 
-                       tauIsoValue                 = cms.untracked.InputTag("hltHpsDisplPFTauMediumAbsoluteChargedIsolationValue"), 
+                       triggerObjMiniTag        = cms.untracked.InputTag("slimmedPatTrigger::RECO"),
+                       
 
-                       hltTauCandidatesNoDispl     = cms.untracked.InputTag("hltHpsPFTauProducer", "", "MYHLT"), 
-                       tauIPNoDispl                = cms.untracked.InputTag("hltHpsPFTauTransverseImpactParametersNoDispl"), 
-                       tauIsoNoDispl               = cms.untracked.InputTag("hltHpsPFTauMediumAbsOrRelChargedIsolationDiscriminator"), 
-                       tauIsoValueNoDispl          = cms.untracked.InputTag("hltHpsPFTauMediumAbsoluteChargedIsolationValue"), 
+                       hltMuCandidates          = cms.untracked.InputTag("hltIterL3DisplacedMuonCandidates"), 
 
-                       L1MuonCandidates            = cms.untracked.InputTag("gmtStage2Digis", "Muon"), 
-                       L1TauCandidates             = cms.untracked.InputTag("caloStage2Digis", "Tau"), 
+                       hltTauCandidates         = cms.untracked.InputTag("hltHpsPFTauProducerDispl", "", "MYHLT"), 
+                       tauIP                    = cms.untracked.InputTag("hltHpsPFTauTransverseImpactParameters"), 
+                       tauIso                   = cms.untracked.InputTag("hltHpsDisplPFTauMediumAbsOrRelChargedIsolationDiscriminator"), 
+                       tauIsoValue              = cms.untracked.InputTag("hltHpsDisplPFTauMediumAbsoluteChargedIsolationValue"), 
 
-#                        RhoCorrectionOnline      = cms.untracked.InputTag("hltFixedGridRhoFastjetAllCaloForMuons"), # for now, same for tag and probe muons
+                       hltTauCandidatesNoDispl  = cms.untracked.InputTag("hltHpsPFTauProducer", "", "MYHLT"), 
+                       tauIPNoDispl             = cms.untracked.InputTag("hltHpsPFTauTransverseImpactParametersNoDispl"), 
+                       tauIsoNoDispl            = cms.untracked.InputTag("hltHpsPFTauMediumAbsOrRelChargedIsolationDiscriminator"), 
+                       tauIsoValueNoDispl       = cms.untracked.InputTag("hltHpsPFTauMediumAbsoluteChargedIsolationValue"), 
+
+                       L2isoJetTag              = cms.untracked.InputTag("hltL2TauPixelIsoTagProducerL1TauSeededGlob"), 
+                       onlineVertices           = cms.untracked.InputTag("hltTrimmedPixelVertices"), 
+                       tauPVertices             = cms.untracked.InputTag("hltHpsPFTauPrimaryVertexProducer", "PFTauPrimaryVertices", "MYHLT"), 
+                       pixelTracks              = cms.untracked.InputTag("hltPixelTracks"), 
+                       allTracks                = cms.untracked.InputTag("hltPFMuonMergingForDisplTau"), 
+
+                       L1MuonCandidates         = cms.untracked.InputTag("gmtStage2Digis", "Muon"), 
+                       L1TauCandidates          = cms.untracked.InputTag("caloStage2Digis", "Tau"), 
 
                        lumiScalerTag            = cms.untracked.InputTag("scalersRawToDigi"),
                        puInfoTag                = cms.untracked.InputTag("addPileupInfo"),
-#                        genParticlesTag          = cms.untracked.InputTag("genParticles"),
-#                        doOffline                = cms.untracked.bool(True)
+                       beamspot                 = cms.untracked.InputTag("hltOnlineBeamSpot"),
                        )   
                        
 process.mypath  = cms.Path(process.tauNtuples)
