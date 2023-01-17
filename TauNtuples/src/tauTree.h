@@ -93,6 +93,29 @@ public:
 
   ClassDef(HLTMuonCand,1);
 };
+
+
+class HLTEGCand {
+public:
+
+  Float_t pt;           
+  Float_t eta;          
+  Float_t phi;          
+  Float_t dxy;          
+  Float_t dz;
+  Float_t r9;
+  Float_t clusterShape;
+//   Float_t trkpt;         // pt of the track of the hlt muon [GeV]
+  Int_t   charge;         // pt of the track of the hlt muon [GeV]
+  Float_t ecalIso;
+  Float_t hcalIso;
+  Float_t trkIso;
+
+  HLTEGCand(){};
+  virtual ~HLTEGCand(){};
+
+  ClassDef(HLTEGCand,1);
+};
 // 
 // 
 // class L2MuonCand {
@@ -269,6 +292,7 @@ public:
   std::vector <HLTTauCand>      hlttausnodispl;      
   std::vector <HLTTauCand>      hlttaus;      
   std::vector <HLTMuonCand>     hltmuons;     
+  std::vector <HLTEGCand>       hltphotons;
   std::vector <HLTJetTagCand>   hltjettags;     
   std::vector <HLTVtx>          hltvtx;     
   std::vector <HLTVtx>          taupvs;     

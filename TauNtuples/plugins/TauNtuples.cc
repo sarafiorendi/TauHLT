@@ -58,6 +58,9 @@
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/Scalers/interface/LumiScalers.h"
 
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidateFwd.h"
+#include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 #include "HLTrigger/HLTcore/interface/HLTEventAnalyzerAOD.h"
@@ -103,6 +106,12 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
                       const edm::Event      &,
                       const edm::Handle<reco::BeamSpot> &  
                      );
+
+    void fillHltPhotons(const edm::Handle<reco::RecoEcalCandidateCollection> &,
+                        const edm::Event      &,
+                        const edm::Handle<reco::BeamSpot> &  
+                     );
+
     void fillHltTaus(const edm::Handle<reco::PFTauCollection> &,
                      const edm::Event      &,
                      const edm::EDGetTokenT<TauIPCollection> &,
@@ -147,6 +156,15 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
     edm::EDGetTokenT<l1t::TauBxCollection> l1taucandToken_; 
 
     edm::EDGetTokenT<reco::RecoChargedCandidateCollection> hltmucandToken_; 
+    edm::EDGetTokenT<reco::RecoEcalCandidateCollection> hltegcandToken_; 
+    
+    edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> r9Token_;
+    edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> clusterShapeToken_;
+    edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> egEcalIsoToken_;
+    edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> egHcalIsoToken_;
+    edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> egTrkIsoToken_;
+    
+
     edm::EDGetTokenT<reco::PFTauCollection> hlttaucandToken_; 
     edm::EDGetTokenT<TauIPCollection> hlttauIPToken_; 
     edm::EDGetTokenT<reco::PFTauDiscriminator> hlttauIsoToken_; 
@@ -187,6 +205,12 @@ TauNtuples::TauNtuples(const edm::ParameterSet& iConfig)
       l1mucandToken_ (consumes<l1t::MuonBxCollection>(iConfig.getUntrackedParameter<edm::InputTag>("L1MuonCandidates"))),
       l1taucandToken_(consumes<l1t::TauBxCollection>(iConfig.getUntrackedParameter<edm::InputTag>("L1TauCandidates"))),
       hltmucandToken_(consumes<reco::RecoChargedCandidateCollection>(iConfig.getUntrackedParameter<edm::InputTag>("hltMuCandidates"))),
+      hltegcandToken_(consumes<reco::RecoEcalCandidateCollection>(iConfig.getUntrackedParameter<edm::InputTag>("hltEGCandidates"))),
+      r9Token_(consumes<reco::RecoEcalCandidateIsolationMap>(iConfig.getUntrackedParameter<edm::InputTag>("hltR9"))),
+      clusterShapeToken_(consumes<reco::RecoEcalCandidateIsolationMap>(iConfig.getUntrackedParameter<edm::InputTag>("hltClusterShape"))),
+      egEcalIsoToken_(consumes<reco::RecoEcalCandidateIsolationMap>(iConfig.getUntrackedParameter<edm::InputTag>("hltEGEcalIso"))),
+      egHcalIsoToken_(consumes<reco::RecoEcalCandidateIsolationMap>(iConfig.getUntrackedParameter<edm::InputTag>("hltEGHcalIso"))),
+      egTrkIsoToken_(consumes<reco::RecoEcalCandidateIsolationMap>(iConfig.getUntrackedParameter<edm::InputTag>("hltEGTrkIso"))),
       hlttaucandToken_(consumes<reco::PFTauCollection>(iConfig.getUntrackedParameter<edm::InputTag>("hltTauCandidates"))),
       hlttauIPToken_(consumes<TauIPCollection>(iConfig.getUntrackedParameter<edm::InputTag>("tauIP"))),
       hlttauIsoToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIso"))),
@@ -252,6 +276,11 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
     fillHltMuons(l3mucands, event, beamSpotHandle); 
 //   else
 //     edm::LogWarning("") << "Online L3 muons collection not found !!!";
+
+  edm::Handle<reco::RecoEcalCandidateCollection> egcands;
+  if (event.getByToken(hltegcandToken_, egcands))
+    fillHltPhotons(egcands, event, beamSpotHandle); 
+
 
   // Handle the hlt taus collection and fill online taus
   edm::Handle<reco::PFTauCollection> hlttaucands;
@@ -516,6 +545,87 @@ void TauNtuples::fillHltMuons(const edm::Handle<reco::RecoChargedCandidateCollec
 
     event_.hltmuons   .push_back(theL3Mu);
   }
+}
+
+// ---------------------------------------------------------------------
+void TauNtuples::fillHltPhotons(const edm::Handle<reco::RecoEcalCandidateCollection> & ecalcands ,
+                                const edm::Event                                     & event  ,
+                                const edm::Handle<reco::BeamSpot>                    & beamSpotHandle
+                               )
+{
+
+  const reco::BeamSpot& bs = *beamSpotHandle;
+
+  edm::Handle<reco::RecoEcalCandidateIsolationMap> r9Map, clusterShapeMap, ecalIsoMap, hcalIsoMap, trkIsoMap;
+
+//   const reco::RecoEcalCandidateCollection& ecalColl = *(ecalcands.product());
+
+  for( unsigned int il3 = 0; il3 < ecalcands->size(); ++il3) {
+    reco::RecoEcalCandidateRef candref(ecalcands, il3);
+
+    HLTEGCand theEG;
+    theEG.pt      = candref->pt();
+    theEG.eta     = candref->eta();
+    theEG.phi     = candref->phi();
+    theEG.charge  = candref->charge();
+
+    if (event.getByToken(r9Token_, r9Map) ){
+      reco::RecoEcalCandidateIsolationMap::const_iterator r9_map_i = (*r9Map).find( candref );
+      theEG.r9    = r9_map_i->val;
+    }
+    else    theEG.r9    = -9999;
+    
+    if (event.getByToken(clusterShapeToken_, clusterShapeMap) ){
+      reco::RecoEcalCandidateIsolationMap::const_iterator cs_map_i = (*clusterShapeMap).find( candref );
+      theEG.clusterShape    = cs_map_i->val;
+    }
+    else    theEG.clusterShape    = -9999;
+
+    if (event.getByToken(egEcalIsoToken_, ecalIsoMap) ){
+      reco::RecoEcalCandidateIsolationMap::const_iterator ecal_map_i = (*ecalIsoMap).find( candref );
+      theEG.ecalIso    = ecal_map_i->val;
+    }
+    else    theEG.ecalIso    = -9999;
+
+    if (event.getByToken(egHcalIsoToken_, hcalIsoMap) ){
+      reco::RecoEcalCandidateIsolationMap::const_iterator hcal_map_i = (*hcalIsoMap).find( candref );
+      theEG.hcalIso    = hcal_map_i->val;
+    }
+    else    theEG.hcalIso    = -9999;
+
+    if (event.getByToken(egTrkIsoToken_, trkIsoMap) ){
+      reco::RecoEcalCandidateIsolationMap::const_iterator trk_map_i = (*trkIsoMap).find( candref );
+      theEG.trkIso    = trk_map_i->val;
+    }
+    else    theEG.trkIso    = -9999;
+
+    
+
+    event_.hltphotons   .push_back(theEG);
+  }
+//   for (const auto& i_ecalCand : ecalColl) {
+//     HLTEGCand theEG;
+// 
+//     theEG.pt      = i_ecalCand.pt();
+//     theEG.eta     = i_ecalCand.eta();
+//     theEG.phi     = i_ecalCand.phi();
+//     theEG.charge  = i_ecalCand.charge();
+//     
+// //     if (event.getByToken(r9Token_, r9Map) ){
+// //       reco::RecoEcalCandidateIsolationMap::const_iterator r9_map_i = (*r9Map).find( i_ecalCand );
+// //       theEG.r9    = r9_map_i->val;
+// //     }
+// //     else    theEG.r9    = -9999;
+// 
+// 
+// //     reco::TrackRef tk = candref->track();
+// //     float absDxy = std::abs(tk->dxy(bs.position()));
+// //     theEG.dxy     = absDxy;  // to be checked
+//     
+// //     theEG.dz = candref -> vz();
+// 
+//     event_.hltphotons   .push_back(theEG);
+//   }
 }
 
 // ---------------------------------------------------------------------
@@ -811,6 +921,7 @@ void TauNtuples::beginEvent()
   event_.hlttausnodispl.clear();
   event_.hlttaus.clear();
   event_.hltmuons.clear();
+  event_.hltphotons.clear();
   event_.hltjettags.clear();
   event_.L1taus.clear();
   event_.L1muons.clear();
