@@ -61,10 +61,15 @@
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+#include "RecoEcal/EgammaCoreTools/interface/EcalClusterTools.h"
+
+
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 #include "HLTrigger/HLTcore/interface/HLTEventAnalyzerAOD.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
+
 
 #include "TTree.h"
 
@@ -163,6 +168,9 @@ class TauNtuples : public edm::one::EDAnalyzer<edm::one::SharedResources> {
     edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> egEcalIsoToken_;
     edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> egHcalIsoToken_;
     edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> egTrkIsoToken_;
+    edm::EDGetTokenT<EcalRecHitCollection> recHitsEBToken_;
+    edm::EDGetTokenT<EcalRecHitCollection> recHitsEEToken_;
+
     
 
     edm::EDGetTokenT<reco::PFTauCollection> hlttaucandToken_; 
@@ -211,6 +219,8 @@ TauNtuples::TauNtuples(const edm::ParameterSet& iConfig)
       egEcalIsoToken_(consumes<reco::RecoEcalCandidateIsolationMap>(iConfig.getUntrackedParameter<edm::InputTag>("hltEGEcalIso"))),
       egHcalIsoToken_(consumes<reco::RecoEcalCandidateIsolationMap>(iConfig.getUntrackedParameter<edm::InputTag>("hltEGHcalIso"))),
       egTrkIsoToken_(consumes<reco::RecoEcalCandidateIsolationMap>(iConfig.getUntrackedParameter<edm::InputTag>("hltEGTrkIso"))),
+      recHitsEBToken_(consumes<EcalRecHitCollection>(iConfig.getUntrackedParameter<edm::InputTag>("hltEBRecHits"))),
+      recHitsEEToken_(consumes<EcalRecHitCollection>(iConfig.getUntrackedParameter<edm::InputTag>("hltEERecHits"))),
       hlttaucandToken_(consumes<reco::PFTauCollection>(iConfig.getUntrackedParameter<edm::InputTag>("hltTauCandidates"))),
       hlttauIPToken_(consumes<TauIPCollection>(iConfig.getUntrackedParameter<edm::InputTag>("tauIP"))),
       hlttauIsoToken_(consumes<reco::PFTauDiscriminator>(iConfig.getUntrackedParameter<edm::InputTag>("tauIso"))),
@@ -557,8 +567,7 @@ void TauNtuples::fillHltPhotons(const edm::Handle<reco::RecoEcalCandidateCollect
   const reco::BeamSpot& bs = *beamSpotHandle;
 
   edm::Handle<reco::RecoEcalCandidateIsolationMap> r9Map, clusterShapeMap, ecalIsoMap, hcalIsoMap, trkIsoMap;
-
-//   const reco::RecoEcalCandidateCollection& ecalColl = *(ecalcands.product());
+  edm::Handle<EcalRecHitCollection> rechitsEB, rechitsEE;
 
   for( unsigned int il3 = 0; il3 < ecalcands->size(); ++il3) {
     reco::RecoEcalCandidateRef candref(ecalcands, il3);
@@ -599,7 +608,20 @@ void TauNtuples::fillHltPhotons(const edm::Handle<reco::RecoEcalCandidateCollect
     }
     else    theEG.trkIso    = -9999;
 
-    
+    if (event.getByToken(recHitsEBToken_, rechitsEB) && event.getByToken(recHitsEEToken_, rechitsEE) ){
+      reco::CaloClusterPtr SCseed = candref->superCluster()->seed();
+      const EcalRecHitCollection* rechits = (std::abs(candref->eta()) < 1.479) ? rechitsEB.product() : rechitsEE.product();
+
+      Cluster2ndMoments moments = EcalClusterTools::cluster2ndMoments(*SCseed, *rechits);
+      float sMin = moments.sMin;
+      float sMaj = moments.sMaj;
+      theEG.sMin = sMin;
+      theEG.sMaj = sMaj;
+    }
+    else    {
+      theEG.sMaj    = -9999;
+      theEG.sMin    = -9999;
+    }  
 
     event_.hltphotons   .push_back(theEG);
   }
@@ -611,20 +633,11 @@ void TauNtuples::fillHltPhotons(const edm::Handle<reco::RecoEcalCandidateCollect
 //     theEG.phi     = i_ecalCand.phi();
 //     theEG.charge  = i_ecalCand.charge();
 //     
-// //     if (event.getByToken(r9Token_, r9Map) ){
-// //       reco::RecoEcalCandidateIsolationMap::const_iterator r9_map_i = (*r9Map).find( i_ecalCand );
-// //       theEG.r9    = r9_map_i->val;
-// //     }
-// //     else    theEG.r9    = -9999;
-// 
-// 
 // //     reco::TrackRef tk = candref->track();
 // //     float absDxy = std::abs(tk->dxy(bs.position()));
 // //     theEG.dxy     = absDxy;  // to be checked
 //     
 // //     theEG.dz = candref -> vz();
-// 
-//     event_.hltphotons   .push_back(theEG);
 //   }
 }
 

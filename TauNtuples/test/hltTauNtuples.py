@@ -31,9 +31,17 @@ process.tauNtuples =cms.EDAnalyzer("TauNtuples",
                        triggerResultTag         = cms.untracked.InputTag("TriggerResults::HLT"),
                        triggerSummaryTag        = cms.untracked.InputTag("hltTriggerSummaryAOD::HLT"),
                        triggerObjMiniTag        = cms.untracked.InputTag("slimmedPatTrigger::RECO"),
-                       
 
                        hltMuCandidates          = cms.untracked.InputTag("hltIterL3DisplacedMuonCandidates"), 
+
+                       hltEGCandidates          = cms.untracked.InputTag("hltEgammaCandidates"), 
+                       hltR9                    = cms.untracked.InputTag("hltEgammaR9ID"), 
+                       hltClusterShape          = cms.untracked.InputTag("hltEgammaClusterShape"), 
+                       hltEGEcalIso             = cms.untracked.InputTag("hltEgammaEcalPFClusterIso"), 
+                       hltEGHcalIso             = cms.untracked.InputTag("hltEgammaHcalPFClusterIso"), 
+                       hltEGTrkIso              = cms.untracked.InputTag("hltEgammaHollowTrackIso"), 
+                       hltEBRecHits             = cms.untracked.InputTag( 'hltEcalRecHit','EcalRecHitsEB' ), 
+                       hltEERecHits             = cms.untracked.InputTag( 'hltEcalRecHit','EcalRecHitsEE' ), 
 
                        hltTauCandidates         = cms.untracked.InputTag("hltHpsPFTauProducerDispl", "", "MYHLT"), 
                        tauIP                    = cms.untracked.InputTag("hltHpsPFTauTransverseImpactParameters"), 

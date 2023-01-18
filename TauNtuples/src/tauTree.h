@@ -110,6 +110,8 @@ public:
   Float_t ecalIso;
   Float_t hcalIso;
   Float_t trkIso;
+  Float_t sMin;
+  Float_t sMaj;
 
   HLTEGCand(){};
   virtual ~HLTEGCand(){};
