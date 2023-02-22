@@ -227,6 +227,7 @@ public:
   Float_t pt;            // pt of the object passing the filter [GeV]
   Float_t eta;           // eta of the object passing the filter
   Float_t phi;           // phi of the object passing the filter
+  Int_t type;           // phi of the object passing the filter
   
   HLTObjCand(){};
   virtual ~HLTObjCand(){};

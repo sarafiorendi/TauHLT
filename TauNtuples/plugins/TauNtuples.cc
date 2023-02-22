@@ -323,8 +323,8 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
   edm::Handle<reco::VertexCollection> taupvcoll;
   if (event.getByToken(taupvToken_, taupvcoll))
     fillHltVtx(taupvcoll, event,true); 
-  else
-    edm::LogWarning("") << "Online tau PV collection not found !!!";
+//   else
+//     edm::LogWarning("") << "Online tau PV collection not found !!!";
 
   // Handle the hlt pixel track collection and fill 
   edm::Handle<reco::TrackCollection> pixTks;
@@ -750,6 +750,7 @@ void TauNtuples::fillL1Taus(const edm::Handle<l1t::TauBxCollection> & l1cands ,
 
       l1t::TauRef tau(l1cands, distance(l1cands->begin(l1cands->getFirstBX()),it) );
 
+      std::cout << "filling l1 taus " << std::endl;
       L1TauCand theL1Tau;
       theL1Tau.pt       = tau -> pt();
       theL1Tau.eta      = tau -> eta();
@@ -808,6 +809,8 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
            filterTag.find ("L2TauIso" ) !=std::string::npos ||
            filterTag.find ("hltSelected" ) !=std::string::npos ||
            filterTag.find ("Displ" ) !=std::string::npos ||
+           filterTag.find ("hltEG" ) !=std::string::npos ||
+           filterTag.find ("hltEgamma" ) !=std::string::npos ||
            filterTag.find ("hltHps"  ) !=std::string::npos 
            ) 
 //            && filterTag.find ("Tau"       ) ==std::string::npos   &&
@@ -829,6 +832,8 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
         hltObj.pt  = triggerObj.pt();
         hltObj.eta = triggerObj.eta();
         hltObj.phi = triggerObj.phi();
+//         hltObj.type = triggerObj.type(84);
+//         std::cout << triggerObj.type(84) << std::endl;
         
         if (isTag)       event_.hltTag.objects.push_back(hltObj);
         else             event_.hlt   .objects.push_back(hltObj);
