@@ -268,18 +268,18 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
 
 
   // Handle the L1 collections and fill info
-  edm::Handle<l1t::MuonBxCollection> mul1cands;
-  if (event.getByToken(l1mucandToken_, mul1cands))
-    fillL1Muons(mul1cands, event);
-//   else
+//   edm::Handle<l1t::MuonBxCollection> mul1cands;
+//   if (event.getByToken(l1mucandToken_, mul1cands))
+//     fillL1Muons(mul1cands, event);
+// //   else
 //     edm::LogWarning("") << "Online L1 muon collection not found !!!";
-
-  edm::Handle<l1t::TauBxCollection> taul1cands;
-  if (event.getByToken(l1taucandToken_, taul1cands))
-    fillL1Taus(taul1cands, event);
-//   else
-//     edm::LogWarning("") << "Online L1 tau collection not found !!!";
-  
+// 
+//   edm::Handle<l1t::TauBxCollection> taul1cands;
+//   if (event.getByToken(l1taucandToken_, taul1cands))
+//     fillL1Taus(taul1cands, event);
+// //   else
+// //     edm::LogWarning("") << "Online L1 tau collection not found !!!";
+//   
   // Handle the hlt muon collection and fill online muons
   edm::Handle<reco::RecoChargedCandidateCollection> l3mucands;
   if (event.getByToken(hltmucandToken_, l3mucands))
@@ -299,44 +299,44 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
 //   else
 //     edm::LogWarning("") << "Online PF taus collection not found !!!";
 
-  edm::Handle<reco::PFTauCollection> hlttaucandsNodispl;
-  if (event.getByToken(hlttaucandnodisplToken_, hlttaucandsNodispl))
-    fillHltTaus(hlttaucandsNodispl, event, hlttauIPnodisplToken_, hlttauIsonodisplToken_, hlttauIsoValuenodisplToken_,false); 
+//   edm::Handle<reco::PFTauCollection> hlttaucandsNodispl;
+//   if (event.getByToken(hlttaucandnodisplToken_, hlttaucandsNodispl))
+//     fillHltTaus(hlttaucandsNodispl, event, hlttauIPnodisplToken_, hlttauIsonodisplToken_, hlttauIsoValuenodisplToken_,false); 
 //   else
 //     edm::LogWarning("") << "Online prompt PF taus collection not found !!!";
 
 
   // Handle the hlt jet tag collection and fill 
-  edm::Handle<reco::JetTagCollection> hltjettagcands;
-  if (event.getByToken(jetTagToken_, hltjettagcands))
-    fillHltJetTags(hltjettagcands, event); 
+//   edm::Handle<reco::JetTagCollection> hltjettagcands;
+//   if (event.getByToken(jetTagToken_, hltjettagcands))
+//     fillHltJetTags(hltjettagcands, event); 
 //   else
 //     edm::LogWarning("") << "Online Jet collection not found !!!";
 
   // Handle the hlt jet tag collection and fill 
-  edm::Handle<reco::VertexCollection> onlinevtx;
-  if (event.getByToken(vtxToken_, onlinevtx))
-    fillHltVtx(onlinevtx, event,false); 
+//   edm::Handle<reco::VertexCollection> onlinevtx;
+//   if (event.getByToken(vtxToken_, onlinevtx))
+//     fillHltVtx(onlinevtx, event,false); 
 //   else
 //     edm::LogWarning("") << "Online vtx collection not found !!!";
 
-  edm::Handle<reco::VertexCollection> taupvcoll;
-  if (event.getByToken(taupvToken_, taupvcoll))
-    fillHltVtx(taupvcoll, event,true); 
+//   edm::Handle<reco::VertexCollection> taupvcoll;
+//   if (event.getByToken(taupvToken_, taupvcoll))
+//     fillHltVtx(taupvcoll, event,true); 
 //   else
 //     edm::LogWarning("") << "Online tau PV collection not found !!!";
 
   // Handle the hlt pixel track collection and fill 
-  edm::Handle<reco::TrackCollection> pixTks;
-  if (event.getByToken(pixTracksToken_, pixTks))
-    fillHltTks(pixTks, event, beamSpotHandle, true); 
+//   edm::Handle<reco::TrackCollection> pixTks;
+//   if (event.getByToken(pixTracksToken_, pixTks))
+//     fillHltTks(pixTks, event, beamSpotHandle, true); 
 //   else
 //     edm::LogWarning("") << "Online pixel tk collection not found !!!";
 
   // Handle the hlt track collection and fill 
-  edm::Handle<reco::TrackCollection> tkTks;
-  if (event.getByToken(tkTracksToken_, tkTks))
-    fillHltTks(tkTks, event, beamSpotHandle, false); 
+//   edm::Handle<reco::TrackCollection> tkTks;
+//   if (event.getByToken(tkTracksToken_, tkTks))
+//     fillHltTks(tkTks, event, beamSpotHandle, false); 
 //   else
 //     edm::LogWarning("") << "Online tk collection not found !!!";
 
@@ -356,22 +356,22 @@ void TauNtuples::analyze(const edm::Event& event, const edm::EventSetup& iSetup)
 
 
   // Fill trigger information for the new trigger
-  edm::Handle<edm::TriggerResults>   triggerResultsTag;
-  edm::Handle<trigger::TriggerEvent> triggerEventTag;
-  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjectsTag;
-
-  if (event.getByToken(triggerResultTagToken_, triggerResultsTag) &&
-      event.getByToken(triggerSummTagToken_  , triggerEventTag)) {
-      
-    edm::TriggerNames triggerNames_ = event.triggerNames(*triggerResultsTag);
-    fillHlt(triggerResultsTag, triggerEventTag, triggerNames_, event, true);
-  }
-  else if (event.getByToken(triggerResultTagToken_, triggerResultsTag) &&
-           event.getByToken(triggerObjMiniTagToken_  , triggerObjectsTag)) {
-    fillHltMiniAOD(triggerResultsTag, triggerObjectsTag, event, true);
-  }
-  else 
-    edm::LogError("") << "Old trigger collection not found !!!";
+//   edm::Handle<edm::TriggerResults>   triggerResultsTag;
+//   edm::Handle<trigger::TriggerEvent> triggerEventTag;
+//   edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjectsTag;
+// 
+//   if (event.getByToken(triggerResultTagToken_, triggerResultsTag) &&
+//       event.getByToken(triggerSummTagToken_  , triggerEventTag)) {
+//       
+//     edm::TriggerNames triggerNames_ = event.triggerNames(*triggerResultsTag);
+//     fillHlt(triggerResultsTag, triggerEventTag, triggerNames_, event, true);
+//   }
+//   else if (event.getByToken(triggerResultTagToken_, triggerResultsTag) &&
+//            event.getByToken(triggerObjMiniTagToken_  , triggerObjectsTag)) {
+//     fillHltMiniAOD(triggerResultsTag, triggerObjectsTag, event, true);
+//   }
+//   else 
+//     edm::LogError("") << "Old trigger collection not found !!!";
 
 
   // Fill bx and inst lumi info
@@ -777,16 +777,16 @@ void TauNtuples::fillHlt(const edm::Handle<edm::TriggerResults>    & triggerResu
     LogDebug ("triggers") << triggerNames.triggerName(itrig) ;
     if (triggerResults->accept(itrig)){
       std::string pathName = triggerNames.triggerName(itrig);
-      if ( pathName.find ("HLT_IsoMu"  ) !=std::string::npos ||
-           pathName.find ("HLT_Mu45"   ) !=std::string::npos ||
-           pathName.find ("HLT_Mu"     ) !=std::string::npos ||
-           pathName.find ("HLT_TkMu"   ) !=std::string::npos ||
-           pathName.find ("HLT_Mu17"   ) !=std::string::npos ||
-           pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
-           pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
-           pathName.find ("HLT_Displaced" ) !=std::string::npos ||
-           pathName.find ("HLT_DoubleTight") !=std::string::npos ||
-           pathName.find ("HLT_DoubleMedium"  ) !=std::string::npos
+      if ( pathName.find ("HLT_"  ) !=std::string::npos ||
+//            pathName.find ("HLT_"   ) !=std::string::npos ||
+//            pathName.find ("HLT_Mu"     ) !=std::string::npos ||
+//            pathName.find ("HLT_TkMu"   ) !=std::string::npos ||
+//            pathName.find ("HLT_Mu17"   ) !=std::string::npos ||
+//            pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
+//            pathName.find ("HLT_L2Mu"   ) !=std::string::npos ||
+//            pathName.find ("HLT_Displaced" ) !=std::string::npos ||
+//            pathName.find ("HLT_DoubleTight") !=std::string::npos ||
+           pathName.find ("HLT_"  ) !=std::string::npos
       ){
         if (isTag) event_.hltTag.triggers.push_back(pathName);
         else       event_.hlt   .triggers.push_back(pathName);
